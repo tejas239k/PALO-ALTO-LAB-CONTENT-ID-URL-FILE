@@ -1,0 +1,175 @@
+Content ID/Security Profiles - URL Filtering/File Blocking
+
+After Setting up the basic management and client pc with required ip addresses and gateway(if required) and also setting the management interface on palo alto with the below given configuration, we'll move to palo alto GUI.
+
+Palo Alto Management Interface
+configure
+set deviceconfig system type static
+set deviceconfig system ip-address 192.168.10.10 netmask 255.255.255.0
+commit
+exit
+
+Network>Interfaces>ethernet1/1
+Interface Name: ethernet1/1
+Interface Type: Layer3
+Config
+Virtual Router: default
+Security Zone: LAN
+IPv4
+add
+192.168.20.10/24
+Advanced
+Management Profile(New)
+Name: Ping
+HTTP
+HTTPS
+Ping
+ok
+Network>Interfaces>ethernet1/2
+Interface Name: ethernet1/2
+Interface Type: Layer3
+Config
+Virtual Router: default
+Security Zone: Outside
+IPv4
+DHCP Client
+ok
+
+Objects>Tags
+Add
+Name:Lan
+Color:Forest Green
+ok
+Add
+Name:Outside
+Color:Red
+ok
+
+Policies>Security>
+Add
+General
+Name:LAN-to-Outside
+Source
+Source Zone
+Add
+LAN
+Source Address
+Add
+192.168.20.0/24
+Destination
+Destination zone
+Add
+Outside
+ok
+
+Policies>NAT
+Add
+General
+Name: PAT
+Original Packet
+Source Zone
+Add
+LAN
+Destination Zone
+Outside
+Translated Packet
+Source Address Translation
+Translation Type: Dynamic IP And Port
+Address Type: Interface Address
+Interface: ethernet1/2
+IP Address: None
+ok
+COMMIT
+
+This is a normal setup for the client to access the internet which will be similar in most of the labs moving forward.
+
+Go to the client PC and try to access the internet.(SUCCESS!!)
+
+Here we'll be doing URL Filtering and File Blocking
+
+URL Filtering
+
+Objects>Security Profiles>URL Filtering
+Add
+Name:URL-Profile
+Categories
+games>Site Access>Block
+ok
+Policies>Security>
+LAN-TO-INTERNET
+Add
+General
+Name:LAN-to-Outside
+Source
+Source Zone
+Add
+LAN
+Source Address
+Add
+192.168.20.0/24
+Destination
+Destination zone
+Add
+Outside
+ok
+Actions
+Action Setting
+Action:Allow
+Profile Setting
+Profile Type:Profiles
+URL Filtering:URL-Profile
+ok
+COMMIT
+
+Now go on the client PC and search for gaming websites it will be blocked.
+(Due to the LAB environment I'm using is not have the proper licence for the URL Filtering we wont't be able to niether run this profile we just made nor we would be able to monitor the packet flow)
+
+File Blocking
+Objects>Security Profiles>File Blocking
+Add
+Name:Blocked
+Add
+Name:exe
+Application:any
+File Types: exe
+Direction:both
+Action:block
+Add
+Name:pdf
+Application:any
+File Types: pdf
+Direction:both
+Action:block
+ok
+
+
+Policies>Security>
+LAN-TO-INTERNET
+Add
+General
+Name:LAN-to-Outside
+Source
+Source Zone
+Add
+LAN
+Source Address
+Add
+192.168.20.0/24
+Destination
+Destination zone
+Add
+Outside
+ok
+Actions
+Action Setting
+Action:Allow
+Profile Setting
+Profile Type:Profiles
+File Blocking:Blocked
+ok
+COMMIT
+
+No go to the client pc and try to download the chrome browser or any exe file the download will fail or try to download any pdf file the download will fail.> File Transfer Blocked
+
+File Blocking
+Here if we change the action from block to continue > it will show > Please click Continue to download/upload the file and the pdf file will open and a log will be generated.
